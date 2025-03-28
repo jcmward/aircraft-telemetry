@@ -1,3 +1,8 @@
+/****************************************************************************
+ * CSCN73060: Project VI -- Client/Server Project
+ * Functions to parse received telemetry.  See .cpp file for details.
+ ****************************************************************************/
+
 #ifndef PARSE_H
 #define PARSE_H
 
@@ -13,8 +18,8 @@ const char* const TIMESTAMP_FORMAT = "%d_%m_%Y %H:%M:%S";
 
 // TODO: maybe add a calculated fuel consumption?
 struct TelemetryDataPoint {
-    struct tm timestamp;
-    double fuelRemaining;
+	struct tm timestamp;
+	double fuelRemaining;
 };
 
 bool parseFirstLine(string& line, TelemetryDataPoint& dataPoint, const char* header);
