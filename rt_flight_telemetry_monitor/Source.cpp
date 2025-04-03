@@ -82,7 +82,9 @@ void handleClient(SOCKET clientSocket) {
 			string line = recvBuffer.substr(0, lineEnd);
 			recvBuffer.erase(0, lineEnd + 1);
 
-			if (line.empty())
+			// Trim the line before checking if it's empty
+
+			if (trim(line).empty())
 				continue;
 
 			TelemetryDataPoint dataPoint;
