@@ -4,3 +4,6 @@ root = true
 end_of_line = lf
 indent_style = tab
 
+[*.bat]
+end_of_line = crlf
+
