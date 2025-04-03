@@ -127,7 +127,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="DateTime.cpp" />
     <ClCompile Include="Parse.cpp" />
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="TelemetryData.cpp" />
