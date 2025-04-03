@@ -65,8 +65,6 @@ void connectToServer(SOCKET& clientSocket, const char* serverAddress, unsigned s
 		exitWithError("Connection to server failed", &clientSocket);
 	}
 }
-
-// Send file content line-by-line
 void sendTelemetryData(SOCKET& clientSocket, const string& fileName) {
 	ifstream file(fileName);
 	if (!file.is_open()) {
@@ -74,7 +72,13 @@ void sendTelemetryData(SOCKET& clientSocket, const string& fileName) {
 	}
 
 	string line;
+	bool isFirstLine = true;
 	while (getline(file, line)) {
+		// Skip the header line
+		if (isFirstLine) {
+			isFirstLine = false;
+			continue;
+		}
 		if (line.length() > MAX_LINE_LEN) {
 			cerr << "Line is too long, skipping: " << line << endl;
 			continue;
@@ -86,6 +90,7 @@ void sendTelemetryData(SOCKET& clientSocket, const string& fileName) {
 	}
 	file.close();
 }
+
 
 int main(int argc, char* argv[]) {
 	// If no arguments given, use default telemetry data filename.
