@@ -29,9 +29,6 @@
     <ClInclude Include="TelemetryData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DateTime.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Parse.h">
       <Filter>Header Files</Filter>
     </ClInclude>

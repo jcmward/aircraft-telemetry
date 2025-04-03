@@ -132,7 +132,6 @@
     <ClCompile Include="TelemetryData.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DateTime.h" />
     <ClInclude Include="Parse.h" />
     <ClInclude Include="TelemetryData.h" />
   </ItemGroup>
