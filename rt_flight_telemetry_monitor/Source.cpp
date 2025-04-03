@@ -18,7 +18,7 @@
 #include <vector>
 #include <mutex>
 
-#include "parse.h"
+#include "Parse.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -112,7 +112,7 @@ void handleClient(SOCKET clientSocket) {
 
 				lock_guard<mutex> lock(coutMutex);
 				cout << "Airplane " << uniqueID
-					<< " [" << asctime(&dataPoint.timestamp) << "]"
+					<< " | " << asctime(&dataPoint.timestamp)
 					<< " Fuel Remaining: " << currentFuel
 					<< " | Current Consumption: " << consumptionRate << " fuel/sec" << endl;
 			}
