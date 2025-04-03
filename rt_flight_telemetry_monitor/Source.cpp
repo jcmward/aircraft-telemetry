@@ -47,58 +47,78 @@ void handleClient(SOCKET clientSocket) {
 	FlightData flight;
 	char buffer[BUFFER_SIZE];
 	int bytesReceived;
+	string recvBuffer; // Buffer for accumulating partial data
 
-	// First, expect a unique ID from the client.
-	bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE - 1, 0);
-	if (bytesReceived <= 0) {
-		closesocket(clientSocket);
-		return;
+	// First, expect a unique ID terminated by a newline.
+	// We'll assume the unique ID is sent as a separate message ending with '\n'
+	while (recvBuffer.find('\n') == string::npos) {
+		bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE - 1, 0);
+		if (bytesReceived <= 0) {
+			closesocket(clientSocket);
+			return;
+		}
+		buffer[bytesReceived] = '\0';
+		recvBuffer += buffer;
 	}
-	buffer[bytesReceived] = '\0';
-	string uniqueID(buffer);
+	// Extract the unique ID up to the newline
+	size_t pos = recvBuffer.find('\n');
+	string uniqueID = recvBuffer.substr(0, pos);
+	// Remove the unique ID from the buffer
+	recvBuffer.erase(0, pos + 1);
+
 	{
 		lock_guard<mutex> lock(coutMutex);
 		cout << "Connected client, airplane ID: " << uniqueID << endl;
 	}
 
-	// Continue processing telemetry data until the client disconnects.
+	// Now process the rest of the telemetry data.
 	while ((bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE - 1, 0)) > 0) {
 		buffer[bytesReceived] = '\0';
-		string line(buffer);
+		recvBuffer += buffer;
 
-		TelemetryDataPoint dataPoint;
-		if (!parseTelemetryData(line, dataPoint)) {
-			lock_guard<mutex> lock(coutMutex);
-			cout << "Failed to parse telemetry data: " << line << endl;
-			continue;
+		// Process complete lines from recvBuffer.
+		size_t lineEnd;
+		while ((lineEnd = recvBuffer.find('\n')) != string::npos) {
+			string line = recvBuffer.substr(0, lineEnd);
+			recvBuffer.erase(0, lineEnd + 1);
+
+			if (line.empty())
+				continue;
+
+			TelemetryDataPoint dataPoint;
+			if (!parseTelemetryData(line, dataPoint)) {
+				lock_guard<mutex> lock(coutMutex);
+				cout << "Failed to parse telemetry data: " << line << endl;
+				continue;
+			}
+
+			// Convert the parsed timestamp (struct tm) to time_t.
+			time_t currentTime = mktime(&dataPoint.timestamp);
+			double currentFuel = dataPoint.fuelRemaining;
+
+			// On first valid reading, store as the start of the flight.
+			if (flight.firstData) {
+				flight.startTime = currentTime;
+				flight.startFuel = currentFuel;
+				flight.firstData = false;
+			}
+			else {
+				// Calculate current fuel consumption (fuel consumed per second).
+				double fuelConsumed = flight.lastFuel - currentFuel;
+				double timeDiff = difftime(currentTime, flight.lastTime);
+				double consumptionRate = (timeDiff > 0) ? (fuelConsumed / timeDiff) : 0.0;
+
+				lock_guard<mutex> lock(coutMutex);
+				cout << "Airplane " << uniqueID
+					<< " [" << asctime(&dataPoint.timestamp) << "]"
+					<< " Fuel Remaining: " << currentFuel
+					<< " | Current Consumption: " << consumptionRate << " fuel/sec" << endl;
+			}
+
+			// Update the last received reading.
+			flight.lastTime = currentTime;
+			flight.lastFuel = currentFuel;
 		}
-
-		// Convert the parsed timestamp (struct tm) to time_t.
-		time_t currentTime = mktime(&dataPoint.timestamp);
-		double currentFuel = dataPoint.fuelRemaining;
-
-		// On first valid reading, store as the start of the flight.
-		if (flight.firstData) {
-			flight.startTime = currentTime;
-			flight.startFuel = currentFuel;
-			flight.firstData = false;
-		}
-		else {
-			// Calculate current fuel consumption (fuel consumed per second).
-			double fuelConsumed = flight.lastFuel - currentFuel;
-			double timeDiff = difftime(currentTime, flight.lastTime);
-			double consumptionRate = (timeDiff > 0) ? (fuelConsumed / timeDiff) : 0.0;
-
-			lock_guard<mutex> lock(coutMutex);
-			cout << "Airplane " << uniqueID
-				<< " [" << asctime(&dataPoint.timestamp) << "]"
-				<< " Fuel Remaining: " << currentFuel
-				<< " | Current Consumption: " << consumptionRate << " fuel/sec" << endl;
-		}
-
-		// Update the last received reading.
-		flight.lastTime = currentTime;
-		flight.lastFuel = currentFuel;
 	}
 
 	// When the connection ends, calculate the flight's average fuel consumption.

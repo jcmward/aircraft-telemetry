@@ -79,6 +79,10 @@ void sendTelemetryData(SOCKET& clientSocket, const string& fileName) {
 			isFirstLine = false;
 			continue;
 		}
+
+		//a newline delimiter is appended.
+		line += "\n";
+
 		if (line.length() > MAX_LINE_LEN) {
 			cerr << "Line is too long, skipping: " << line << endl;
 			continue;
@@ -106,6 +110,9 @@ int main(int argc, char* argv[]) {
 	stringstream ss;
 	ss << "ClientID_" << rand();
 	string uniqueID = ss.str();
+	// Append a newline to clearly mark the end of the unique ID message.
+	uniqueID += "\n";
+
 
 	// Send the unique ID to the server
 	if (send(clientSocket, uniqueID.c_str(), (int)uniqueID.length(), 0) == SOCKET_ERROR) {
