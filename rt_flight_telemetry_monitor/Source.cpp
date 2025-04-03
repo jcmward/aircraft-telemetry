@@ -78,6 +78,7 @@ void handleClient(SOCKET clientSocket) {
 
 		// Process complete lines from recvBuffer.
 		size_t lineEnd;
+		//int count = 1;
 		while ((lineEnd = recvBuffer.find('\n')) != string::npos) {
 			string line = recvBuffer.substr(0, lineEnd);
 			recvBuffer.erase(0, lineEnd + 1);
@@ -87,11 +88,37 @@ void handleClient(SOCKET clientSocket) {
 			if (trim(line).empty())
 				continue;
 
+			//if (count == 1) {
+			//	TelemetryDataPoint firstDataPoint;
+			//	// Parse the first line to initialize the flight data.
+			//	if (!parseFirstLine(line, firstDataPoint, HEADER)) {
+			//		lock_guard<mutex> lock(coutMutex);
+			//		cout << "Failed to parse first line: " << line << endl;
+			//		continue;
+			//	}
+			//	count++;
+			//}
+
+
 			TelemetryDataPoint dataPoint;
-			if (!parseTelemetryData(line, dataPoint)) {
-				lock_guard<mutex> lock(coutMutex);
-				cout << "Failed to parse telemetry data: " << line << endl;
-				continue;
+
+			if (flight.firstData)
+			{
+				// Parse the first line to initialize the flight data.
+				if (!parseFirstLine(line, dataPoint, HEADER)) {
+					lock_guard<mutex> lock(coutMutex);
+					cout << "Failed to parse first line: " << line << endl;
+					continue;
+				}
+			}
+			else
+			{
+				// Parse the telemetry data.
+				if (!parseTelemetryData(line, dataPoint)) {
+					lock_guard<mutex> lock(coutMutex);
+					cout << "Failed to parse telemetry data: " << line << endl;
+					continue;
+				}
 			}
 
 			// Convert the parsed timestamp (struct tm) to time_t.
@@ -103,6 +130,10 @@ void handleClient(SOCKET clientSocket) {
 				flight.startTime = currentTime;
 				flight.startFuel = currentFuel;
 				flight.firstData = false;
+				cout << "Flight started for airplane " << uniqueID
+					<< "| at " << asctime(&dataPoint.timestamp)
+					<< "| with fuel: " << currentFuel << endl;
+
 			}
 			else {
 				// Calculate current fuel consumption (fuel consumed per second).
