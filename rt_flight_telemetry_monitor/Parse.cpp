@@ -57,7 +57,7 @@ bool parseFirstLine(string& line, TelemetryDataPoint& dataPoint, const char* hea
 // Line format: " dd_mm_yyyy HH:MM:SS,fuelRemaining "
 // Note the leading and trailing spaces.
 bool parseTelemetryData(const string& line, TelemetryDataPoint& dataPoint) {
-	string trimmedLine = trim(line);    // Remove leading/trailing spaces
+	string trimmedLine = trim(line);    // Remove leading/trailing whitespace
 	stringstream ss(trimmedLine);
 	string timestampStr;
 	string fuelValueStr;
@@ -99,10 +99,10 @@ bool parseTimestamp(const string& timestampStr, struct tm& timeStruct, const cha
 	return true;
 }
 
-// Trim leading and trailing spaces from a string
+// Trim leading and trailing spaces and newlines from a string
 string trim(const string& str) {
-	size_t start = str.find_first_not_of(" ");
-	size_t end = str.find_last_not_of(" ");
+	size_t start = str.find_first_not_of(" \r\n");
+	size_t end = str.find_last_not_of(" \r\n");
 
 	// If all spaces, return empty string
 	if (start == string::npos || end == string::npos) {
