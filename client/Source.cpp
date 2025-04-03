@@ -26,7 +26,7 @@ const unsigned short SERVER_PORT = 27000;
 const char* const DEFAULT_FILENAME = "telemetry.txt";
 const int MAX_LINE_LEN = 64;
 
-void exitWithError(const string& errorMsg, SOCKET* sock = nullptr) {
+static void exitWithError(const string& errorMsg, SOCKET* sock = nullptr) {
 	cerr << "[ERROR] " << errorMsg << endl;
 	if (sock && *sock != INVALID_SOCKET) {
 		closesocket(*sock);
@@ -36,14 +36,14 @@ void exitWithError(const string& errorMsg, SOCKET* sock = nullptr) {
 }
 
 // Start Winsock DLLs
-void startWinsock() {
+static void startWinsock() {
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
 		exitWithError("WSAStartup failed");
 	}
 }
 
-SOCKET initializeClientSocket() {
+static SOCKET initializeClientSocket() {
 	SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (clientSocket == INVALID_SOCKET) {
 		exitWithError("Socket creation failed");
@@ -51,7 +51,7 @@ SOCKET initializeClientSocket() {
 	return clientSocket;
 }
 
-void connectToServer(SOCKET& clientSocket, const char* serverAddress, unsigned short serverPort) {
+static void connectToServer(SOCKET& clientSocket, const char* serverAddress, unsigned short serverPort) {
 	sockaddr_in svrAddr = { 0 };
 	svrAddr.sin_family = AF_INET;
 	svrAddr.sin_port = htons(serverPort);
@@ -64,7 +64,7 @@ void connectToServer(SOCKET& clientSocket, const char* serverAddress, unsigned s
 }
 
 // Send file content line-by-line
-void sendTelemetryData(SOCKET& clientSocket, const string& fileName) {
+static void sendTelemetryData(SOCKET& clientSocket, const string& fileName) {
 	ifstream file(fileName);
 	if (!file.is_open()) {
 		exitWithError("Could not open file: " + fileName, &clientSocket);
