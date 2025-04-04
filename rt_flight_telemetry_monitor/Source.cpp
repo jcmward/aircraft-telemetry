@@ -17,6 +17,7 @@
 #include <thread>
 #include <vector>
 #include <mutex>
+#include <fstream>
 
 #include "Parse.h"
 
@@ -41,6 +42,8 @@ struct FlightData {
 };
 
 mutex coutMutex; // To synchronize console output
+mutex fileMutex;
+
 
 // Thread function to handle each client connection.
 void handleClient(SOCKET clientSocket) {
@@ -164,6 +167,20 @@ void handleClient(SOCKET clientSocket) {
 		cout << "Flight for airplane " << uniqueID
 			<< " ended. Average Fuel Consumption: "
 			<< averageConsumption << " fuel/sec" << endl;
+	}
+	{
+		lock_guard<mutex> lock(fileMutex);
+		ofstream outFile("flight_consumption.txt", ios::app); // Open in append mode
+		if (outFile.is_open()) {
+			outFile << "Flight for airplane " << uniqueID
+				<< " ended. Average Fuel Consumption: "
+				<< averageConsumption << " fuel/sec" << endl;
+			cout << "Data written to flight_consumption.txt" << endl;
+			outFile.close();
+		}
+		else {
+			cerr << "Error: Unable to open flight_consumption.txt for writing." << endl;
+		}
 	}
 
 	closesocket(clientSocket);
