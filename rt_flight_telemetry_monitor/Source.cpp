@@ -46,7 +46,7 @@ mutex fileMutex;
 
 
 // Thread function to handle each client connection.
-void handleClient(SOCKET clientSocket) {
+static void handleClient(SOCKET clientSocket) {
 	FlightData flight;
 	char buffer[BUFFER_SIZE];
 	int bytesReceived;
@@ -204,7 +204,7 @@ int main() {
 	}
 
 	// Bind the socket.
-	sockaddr_in serverAddr;
+	sockaddr_in serverAddr = { 0 };
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_port = htons(SERVER_PORT);
 	serverAddr.sin_addr.s_addr = INADDR_ANY;
@@ -228,7 +228,7 @@ int main() {
 
 	// Main loop: accept incoming connections and spawn a thread for each.
 	while (true) {
-		sockaddr_in clientAddr;
+		sockaddr_in clientAddr = { 0 };
 		int clientAddrLen = sizeof(clientAddr);
 		SOCKET clientSocket = accept(serverSocket, (sockaddr*)&clientAddr, &clientAddrLen);
 		if (clientSocket == INVALID_SOCKET) {
