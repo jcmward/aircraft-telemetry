@@ -41,11 +41,8 @@ bool parseFirstLine(string& line, TelemetryDataPoint& dataPoint, const char* hea
 		return false;
 	}
 
-	// Remove the header
-	string dataPart = line.substr(strlen(header));
-
-	// Use parseTelemetryData to extract the timestamp and fuel value
-	if (!parseTelemetryData(dataPart, dataPoint)) {
+	// Trim header; use parseTelemetryData to extract timestamp and fuel value
+	if (!parseTelemetryData(line.substr(strlen(header)), dataPoint)) {
 		cerr << "[ERROR] Failed to parse first data point from: " << line << endl;
 		return false;
 	}
@@ -81,7 +78,6 @@ bool parseTelemetryData(const string& line, TelemetryDataPoint& dataPoint) {
 			cerr << "[ERROR] Invalid fuel value: " << fuelValueStr << endl;
 		}
 	}
-
 	return false;
 }
 
