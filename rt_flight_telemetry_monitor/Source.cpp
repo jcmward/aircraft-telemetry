@@ -29,7 +29,7 @@
 using namespace std;
 
 const unsigned short SERVER_PORT = 27000;
-const int BUFFER_SIZE = 128;
+const int BUFFER_SIZE = 4096;
 
 // Structure to keep track of flight data for consumption calculation.
 struct FlightData {
