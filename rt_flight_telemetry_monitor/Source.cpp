@@ -18,6 +18,7 @@
 #include <vector>
 #include <mutex>
 #include <fstream>
+#include <string_view>
 
 #include "Parse.h"
 
@@ -29,7 +30,7 @@
 using namespace std;
 
 const unsigned short SERVER_PORT = 27000;
-const int BUFFER_SIZE = 128;
+const int BUFFER_SIZE = 4096;
 
 // Structure to keep track of flight data for consumption calculation.
 struct FlightData {
@@ -69,10 +70,10 @@ static void handleClient(SOCKET clientSocket) {
 	// Remove the unique ID from the buffer
 	recvBuffer.erase(0, pos + 1);
 
-	{
-		lock_guard<mutex> lock(coutMutex);
-		cout << "Connected client, airplane ID: " << uniqueID << endl;
-	}
+	// {
+	// 	lock_guard<mutex> lock(coutMutex);
+	// 	cout << "Connected client, airplane ID: " << uniqueID << endl;
+	// }
 
 	// Now process the rest of the telemetry data.
 	while ((bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE - 1, 0)) > 0) {
@@ -81,27 +82,32 @@ static void handleClient(SOCKET clientSocket) {
 
 		// Process complete lines from recvBuffer.
 		size_t lineEnd;
+
+		size_t pos = 0;
+
 		//int count = 1;
-		while ((lineEnd = recvBuffer.find('\n')) != string::npos) {
-			string line = recvBuffer.substr(0, lineEnd);
-			recvBuffer.erase(0, lineEnd + 1);
+		while ((lineEnd = recvBuffer.find('\n', pos)) != string::npos) {
+			// Create a string_view to avoid a full copy
+			string_view lineView(recvBuffer.data() + pos, lineEnd - pos);
+			// Process the line (if a std::string is needed, construct it once):
+			string line(lineView);
 
 			// Trim the line before checking if it's empty
-
-			if (trim(line).empty())
+			if (trim(line).empty()) {
+				pos = lineEnd + 1;
 				continue;
+			}
 
-			//if (count == 1) {
-			//	TelemetryDataPoint firstDataPoint;
-			//	// Parse the first line to initialize the flight data.
-			//	if (!parseFirstLine(line, firstDataPoint, HEADER)) {
-			//		lock_guard<mutex> lock(coutMutex);
-			//		cout << "Failed to parse first line: " << line << endl;
-			//		continue;
-			//	}
-			//	count++;
-			//}
-
+			// if (count == 1) {
+			// 	TelemetryDataPoint firstDataPoint;
+			// 	// Parse the first line to initialize the flight data.
+			// 	if (!parseFirstLine(line, firstDataPoint, HEADER)) {
+			// 		lock_guard<mutex> lock(coutMutex);
+			// 		cout << "Failed to parse first line: " << line << endl;
+			// 		continue;
+			// 	}
+			// 	count++;
+			// }
 
 			TelemetryDataPoint dataPoint;
 
@@ -110,7 +116,7 @@ static void handleClient(SOCKET clientSocket) {
 				// Parse the first line to initialize the flight data.
 				if (!parseFirstLine(line, dataPoint, HEADER)) {
 					lock_guard<mutex> lock(coutMutex);
-					cout << "Failed to parse first line: " << line << endl;
+					cerr << "Failed to parse first line: " << line << endl;
 					continue;
 				}
 			}
@@ -119,7 +125,7 @@ static void handleClient(SOCKET clientSocket) {
 				// Parse the telemetry data.
 				if (!parseTelemetryData(line, dataPoint)) {
 					lock_guard<mutex> lock(coutMutex);
-					cout << "Failed to parse telemetry data: " << line << endl;
+					cerr << "Failed to parse telemetry data: " << line << endl;
 					continue;
 				}
 			}
@@ -133,9 +139,9 @@ static void handleClient(SOCKET clientSocket) {
 				flight.startTime = currentTime;
 				flight.startFuel = currentFuel;
 				flight.firstData = false;
-				cout << "Flight started for airplane " << uniqueID
-					<< "| at " << asctime(&dataPoint.timestamp)
-					<< "| with fuel: " << currentFuel << endl;
+				// cout << "Flight started for airplane " << uniqueID
+				// 	<< "| at " << asctime(&dataPoint.timestamp)
+				// 	<< "| with fuel: " << currentFuel << endl;
 
 			}
 			else {
@@ -144,17 +150,21 @@ static void handleClient(SOCKET clientSocket) {
 				double timeDiff = difftime(currentTime, flight.lastTime);
 				double consumptionRate = (timeDiff > 0) ? (fuelConsumed / timeDiff) : 0.0;
 
-				lock_guard<mutex> lock(coutMutex);
-				cout << "Airplane " << uniqueID
-					<< " | " << asctime(&dataPoint.timestamp)
-					<< " Fuel Remaining: " << currentFuel
-					<< " | Current Consumption: " << consumptionRate << " fuel/sec" << endl;
+				// lock_guard<mutex> lock(coutMutex);
+				// cout << "Airplane " << uniqueID
+				// 	<< " | " << asctime(&dataPoint.timestamp)
+				// 	<< " Fuel Remaining: " << currentFuel
+				// 	<< " | Current Consumption: " << consumptionRate << " fuel/sec" << endl;
 			}
 
 			// Update the last received reading.
 			flight.lastTime = currentTime;
 			flight.lastFuel = currentFuel;
+
+			pos = lineEnd + 1;
 		}
+		// Erase processed characters in one go.
+		recvBuffer.erase(0, pos);
 	}
 
 	// When the connection ends, calculate the flight's average fuel consumption.
@@ -163,10 +173,10 @@ static void handleClient(SOCKET clientSocket) {
 	double averageConsumption = (totalTime > 0) ? (totalFuelConsumed / totalTime) : 0.0;
 
 	{
-		lock_guard<mutex> lock(coutMutex);
-		cout << "Flight for airplane " << uniqueID
-			<< " ended. Average Fuel Consumption: "
-			<< averageConsumption << " fuel/sec" << endl;
+		// lock_guard<mutex> lock(coutMutex);
+		// cout << "Flight for airplane " << uniqueID
+		// 	<< " ended. Average Fuel Consumption: "
+		// 	<< averageConsumption << " fuel/sec" << endl;
 	}
 	{
 		lock_guard<mutex> lock(fileMutex);
@@ -182,7 +192,6 @@ static void handleClient(SOCKET clientSocket) {
 			cerr << "Error: Unable to open flight_consumption.txt for writing." << endl;
 		}
 	}
-
 	closesocket(clientSocket);
 }
 
