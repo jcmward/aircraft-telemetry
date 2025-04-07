@@ -70,10 +70,10 @@ static void handleClient(SOCKET clientSocket) {
 	// Remove the unique ID from the buffer
 	recvBuffer.erase(0, pos + 1);
 
-	{
-		lock_guard<mutex> lock(coutMutex);
-		cout << "Connected client, airplane ID: " << uniqueID << endl;
-	}
+	// {
+	// 	lock_guard<mutex> lock(coutMutex);
+	// 	cout << "Connected client, airplane ID: " << uniqueID << endl;
+	// }
 
 	// Now process the rest of the telemetry data.
 	while ((bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE - 1, 0)) > 0) {
@@ -98,16 +98,16 @@ static void handleClient(SOCKET clientSocket) {
 				continue;
 			}
 
-			//if (count == 1) {
-			//	TelemetryDataPoint firstDataPoint;
-			//	// Parse the first line to initialize the flight data.
-			//	if (!parseFirstLine(line, firstDataPoint, HEADER)) {
-			//		lock_guard<mutex> lock(coutMutex);
-			//		cout << "Failed to parse first line: " << line << endl;
-			//		continue;
-			//	}
-			//	count++;
-			//}
+			// if (count == 1) {
+			// 	TelemetryDataPoint firstDataPoint;
+			// 	// Parse the first line to initialize the flight data.
+			// 	if (!parseFirstLine(line, firstDataPoint, HEADER)) {
+			// 		lock_guard<mutex> lock(coutMutex);
+			// 		cout << "Failed to parse first line: " << line << endl;
+			// 		continue;
+			// 	}
+			// 	count++;
+			// }
 
 			TelemetryDataPoint dataPoint;
 
@@ -116,7 +116,7 @@ static void handleClient(SOCKET clientSocket) {
 				// Parse the first line to initialize the flight data.
 				if (!parseFirstLine(line, dataPoint, HEADER)) {
 					lock_guard<mutex> lock(coutMutex);
-					cout << "Failed to parse first line: " << line << endl;
+					cerr << "Failed to parse first line: " << line << endl;
 					continue;
 				}
 			}
@@ -125,7 +125,7 @@ static void handleClient(SOCKET clientSocket) {
 				// Parse the telemetry data.
 				if (!parseTelemetryData(line, dataPoint)) {
 					lock_guard<mutex> lock(coutMutex);
-					cout << "Failed to parse telemetry data: " << line << endl;
+					cerr << "Failed to parse telemetry data: " << line << endl;
 					continue;
 				}
 			}
@@ -139,9 +139,9 @@ static void handleClient(SOCKET clientSocket) {
 				flight.startTime = currentTime;
 				flight.startFuel = currentFuel;
 				flight.firstData = false;
-				cout << "Flight started for airplane " << uniqueID
-					<< "| at " << asctime(&dataPoint.timestamp)
-					<< "| with fuel: " << currentFuel << endl;
+				// cout << "Flight started for airplane " << uniqueID
+				// 	<< "| at " << asctime(&dataPoint.timestamp)
+				// 	<< "| with fuel: " << currentFuel << endl;
 
 			}
 			else {
@@ -150,11 +150,11 @@ static void handleClient(SOCKET clientSocket) {
 				double timeDiff = difftime(currentTime, flight.lastTime);
 				double consumptionRate = (timeDiff > 0) ? (fuelConsumed / timeDiff) : 0.0;
 
-				lock_guard<mutex> lock(coutMutex);
-				cout << "Airplane " << uniqueID
-					<< " | " << asctime(&dataPoint.timestamp)
-					<< " Fuel Remaining: " << currentFuel
-					<< " | Current Consumption: " << consumptionRate << " fuel/sec" << endl;
+				// lock_guard<mutex> lock(coutMutex);
+				// cout << "Airplane " << uniqueID
+				// 	<< " | " << asctime(&dataPoint.timestamp)
+				// 	<< " Fuel Remaining: " << currentFuel
+				// 	<< " | Current Consumption: " << consumptionRate << " fuel/sec" << endl;
 			}
 
 			// Update the last received reading.
@@ -173,10 +173,10 @@ static void handleClient(SOCKET clientSocket) {
 	double averageConsumption = (totalTime > 0) ? (totalFuelConsumed / totalTime) : 0.0;
 
 	{
-		lock_guard<mutex> lock(coutMutex);
-		cout << "Flight for airplane " << uniqueID
-			<< " ended. Average Fuel Consumption: "
-			<< averageConsumption << " fuel/sec" << endl;
+		// lock_guard<mutex> lock(coutMutex);
+		// cout << "Flight for airplane " << uniqueID
+		// 	<< " ended. Average Fuel Consumption: "
+		// 	<< averageConsumption << " fuel/sec" << endl;
 	}
 	{
 		lock_guard<mutex> lock(fileMutex);
